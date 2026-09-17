@@ -1,0 +1,42 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+
+# Not copied into the image, but everything not ignored here is still uploaded
+# to the Docker daemon as build context on every build. .pytest_cache in
+# particular is rewritten by every test run.
+tests/
+conftest.py
+*.md
+LICENSE
+THIRD_PARTY_LICENSES
+requirements.txt
+start.command
+start.bat
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml

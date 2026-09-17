@@ -1,0 +1,39 @@
+services:
+  mathkunji:
+    build: .
+    ports:
+      # Bind the published port to host loopback ONLY. Without the 127.0.0.1
+      # prefix Docker publishes on every host interface, so anyone on the same
+      # network could open MathKunji -- an app that evaluates user-supplied
+      # expressions. This keeps it reachable only from the machine it runs on.
+      #
+      # The container-side GRADIO_SERVER_NAME=0.0.0.0 in the Dockerfile is a
+      # separate binding and must stay as it is: a container's 127.0.0.1 is its
+      # own private loopback, so binding there would leave Docker unable to
+      # forward to it and the app unreachable even locally.
+      - "127.0.0.1:7860:7860"
+    restart: unless-stopped
+    # --- Hardening -------------------------------------------------------
+    # MathKunji binds a high port and does arithmetic. It needs no Linux
+    # capabilities whatsoever, and no path here should ever gain privileges.
+    cap_drop:
+      - ALL
+    security_opt:
+      - "no-new-privileges:true"
+
+    # Resource ceilings. These matter more since the computation budget went
+    # to 60s: a pathological input now has a full minute to allocate before
+    # its worker is killed, so mem_limit is what stops one bad expression
+    # from taking the host down with it. pids_limit is a fork-bomb backstop --
+    # the app itself uses roughly six processes (app + forkserver + up to four
+    # workers), so 256 is enormous headroom, not a constraint.
+    mem_limit: 2g
+    pids_limit: 256
+    cpus: 2.0
+
+    # Run a minimal init as PID 1 so orphaned child processes get reaped.
+    # utils/timeout.py runs each computation in a worker process and kills the
+    # worker when it exceeds its budget; `python app.py` as PID 1 would not
+    # reap those, so a terminated worker whose join() timed out could linger as
+    # a zombie -- and this container is meant to stay up for weeks.
+    init: true
